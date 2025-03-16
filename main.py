@@ -1,15 +1,20 @@
 from os import write
+import os
 from pprint import pprint 
 import time
+from dotenv import load_dotenv
 import requests
 from urllib.parse import urlencode, urlparse, parse_qs
 from base64 import b64encode
 
+
+load_dotenv()
 token_url="https://accounts.spotify.com/api/token"
-CLIENT_ID = "your_client_id"
-CLIENT_SECRET = "your_client_secret"
-REDIRECT_URI = "http://localhost:8888/callback"
-SCOPE = "playlist-modify-public playlist-modify-private"
+REDIRECT_URI = 'http://localhost:8888/callback'
+USER_ID = os.getenv("USER_ID")
+CLIENT_ID = os.getenv("CLIENT_ID")
+CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+SCOPE = 'playlist-modify-public playlist-modify-private'
 
 ACCESS_TOKEN = ""   
 
@@ -183,7 +188,7 @@ def main():
 
     pprint(track_uris)
 
-    with open('download_list', 'w') as file:
+    with open('download_list.txt', 'w') as file:
         for track in track_uris:
             file.write(track + '\n')  # Write each URI on a new line
 
@@ -191,7 +196,7 @@ def main():
     # x=group_tracks_by_artist(tracks)
     # pprint(x)
     # track_uris = [track['track']['uri'] for track in tracks]  # Extract track URIs
-    # create_playlists(track_uris,500)
+    # create_playlists(track_uris,30)
 
 # Run the script
 if __name__ == "__main__":

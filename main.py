@@ -1,3 +1,5 @@
+from os import write
+from pprint import pprint 
 import time
 import requests
 from urllib.parse import urlencode, urlparse, parse_qs
@@ -9,7 +11,7 @@ CLIENT_SECRET = "your_client_secret"
 REDIRECT_URI = "http://localhost:8888/callback"
 SCOPE = "playlist-modify-public playlist-modify-private"
 
-ACCESS_TOKEN = ""  
+ACCESS_TOKEN = ""   
 
 
 # Step 1: Generate authorization URL
@@ -130,6 +132,43 @@ def add_tracks_in_batches(playlist_id, tracks_uris):
             print(f"Error in batch {i//batch_size + 1}: {response.status_code}")
             print(response.json())  # Print the error details for debugging
 
+def create_playlists(track_uris, tracks_per_playlist):
+    # Calculate the number of playlists needed based on the size of the track list
+    num_playlists = (len(track_uris) + tracks_per_playlist - 1) // tracks_per_playlist
+
+    for i in range(num_playlists):
+        print(f"Creating Playlist {i + 1}...")
+        new_playlist_id = create_playlist()  # Create a new playlist
+        if new_playlist_id:
+            start_index = i * tracks_per_playlist  # Start index for the current batch
+            end_index = (i + 1) * tracks_per_playlist  # End index for the current batch
+            batch_tracks = track_uris[start_index:end_index]  # Select tracks for this playlist
+            add_tracks_in_batches(new_playlist_id, batch_tracks)  # Add tracks to the new playlist
+        else:
+            print(f"Failed to create playlist {i + 1}.")
+
+
+def group_tracks_by_artist(playlist):
+    artist_to_tracks = {}
+
+    # Iterate through each song in the playlist
+    for song in playlist:
+        track_name = song['track']['name']  # Get the track name
+        
+        # Iterate through each artist in the song's 'artists' list
+        for artist in song['track']['artists']:
+            artist_name = artist['name']  # Extract the artist name from the dictionary
+            
+            # If the artist isn't in the dictionary, add them with an empty list
+            if artist_name not in artist_to_tracks:
+                artist_to_tracks[artist_name] = []
+            
+            # Add the track to the artist's list of tracks
+            artist_to_tracks[artist_name].append(track_name)
+
+    # Pretty print the artist_to_tracks dictionary to show the grouped tracks by artist
+    return artist_to_tracks
+
 
 # Main logic to fetch tracks and create a new playlist
 def main():
@@ -137,24 +176,22 @@ def main():
     ACCESS_TOKEN = retrieve_access_token()  # Get the access token
 
     # Fetch tracks from an existing playlist (replace with the actual playlist ID)
-    existing_playlist_id = "6VkQ8dJ08TCGOOCI8n4iN2"  # Replace with your playlist ID
+    existing_playlist_id = "4dp2jqNKNNv3kxj5hpTggL"  #"6VkQ8dJ08TCGOOCI8n4iN2"  # Replace with your playlist ID
     tracks = fetch_all_tracks(existing_playlist_id)
     print(f"Retrieved {len(tracks)} tracks from the existing playlist.")
+    track_uris = [track['track']['name'] for track in tracks]  # Extract track URIs
 
-    track_uris = [track['track']['uri'] for track in tracks]  # Extract track URIs
+    pprint(track_uris)
 
-    # Create 10 new playlists and add 95 songs to each
-    for i in range(10):
-        print(f"Creating Playlist {i + 1}...")
-        new_playlist_id = create_playlist()
-        if new_playlist_id:
-            start_index = i * 95  # Start index for the current batch
-            end_index = (i + 1) * 95  # End index for the current batch
-            batch_tracks = track_uris[start_index:end_index]
-            add_tracks_in_batches(new_playlist_id, batch_tracks)
-        else:
-            print(f"Failed to create playlist {i + 1}.")
+    with open('download_list', 'w') as file:
+        for track in track_uris:
+            file.write(track + '\n')  # Write each URI on a new line
 
+
+    # x=group_tracks_by_artist(tracks)
+    # pprint(x)
+    # track_uris = [track['track']['uri'] for track in tracks]  # Extract track URIs
+    # create_playlists(track_uris,500)
 
 # Run the script
 if __name__ == "__main__":
